@@ -28,42 +28,17 @@ jobs:
     - name: Build ARMv7 image
       run: |
         cd /tmp/ddddocr
-        
-        # 创建 ARMv7 Dockerfile
         cat > Dockerfile.armv7 << 'EOF'
         FROM python:3.9-slim-bullseye
-        
-        RUN apt-get update && apt-get install -y \
-            libglib2.0-0 \
-            libsm6 \
-            libxrender1 \
-            libxext6 \
-            libgl1-mesa-glx \
-            libgomp1 \
-            gcc \
-            g++ \
-            && apt-get clean \
-            && rm -rf /var/lib/apt/lists/*
-        
+        RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx libgomp1 gcc g++ && apt-get clean && rm -rf /var/lib/apt/lists/*
         WORKDIR /ddddocr
-        
         COPY requirements.txt .
         RUN pip install --no-cache-dir -r requirements.txt
-        
         COPY server.py .
-        
         EXPOSE 7777
-        
         CMD ["python", "server.py"]
         EOF
-        
-        # 构建 ARMv7 镜像
-        docker buildx build \
-          --platform linux/arm/v7 \
-          -f Dockerfile.armv7 \
-          -t ddddocr:armv7 \
-          --load \
-          .
+        docker buildx build --platform linux/arm/v7 -f Dockerfile.armv7 -t ddddocr:armv7 --load .
         
     - name: Export image
       run: |
@@ -76,20 +51,3 @@ jobs:
         name: ddddocr-armv7-image
         path: ddddocr-armv7.tar.gz
         retention-days: 30
-        
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      if: github.event_name == 'push'
-      with:
-        tag_name: ddddocr-armv7-${{ github.run_number }}
-        name: ddddocr ARMv7 Image Build ${{ github.run_number }}
-        files: ddddocr-armv7.tar.gz
-        body: |
-          ddddocr ARMv7 Docker 镜像
-          
-          使用方法：
-          1. 下载 ddddocr-armv7.tar.gz
-          2. 在玩客云上执行：docker load -i ddddocr-armv7.tar.gz
-          3. 运行：docker run -d -p 7777:7777 --restart=always --name ddddocr ddddocr:armv7
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
