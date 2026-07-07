@@ -22,8 +22,7 @@ jobs:
       uses: docker/setup-buildx-action@v3
       
     - name: Clone ddddocr repo
-      run: |
-        git clone https://github.com/xzxxn777/ddddocr.git /tmp/ddddocr
+      run: git clone https://github.com/xzxxn777/ddddocr.git /tmp/ddddocr
         
     - name: Build ARMv7 image
       run: |
