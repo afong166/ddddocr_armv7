@@ -1,33 +1,31 @@
 name: Build ddddocr ARMv7 Image
-
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
-
 jobs:
   build-armv7:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: docker/setup-qemu-action@v3
-      with:
-        platforms: arm/v7
-    - uses: docker/setup-buildx-action@v3
-    - run: git clone https://github.com/xzxxn777/ddddocr.git /tmp/ddddocr
-    - run: |
-        cd /tmp/ddddocr
-        echo 'FROM python:3.9-slim-bullseye
-        RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx libgomp1 gcc g++ && rm -rf /var/lib/apt/lists/*
-        WORKDIR /ddddocr
-        COPY requirements.txt .
-        RUN pip install --no-cache-dir -r requirements.txt
-        COPY server.py .
-        EXPOSE 7777
-        CMD ["python", "server.py"]' > Dockerfile.armv7
-        docker buildx build --platform linux/arm/v7 -f Dockerfile.armv7 -t ddddocr:armv7 --load .
-    - run: docker save ddddocr:armv7 | gzip > ddddocr-armv7.tar.gz
-    - uses: actions/upload-artifact@v4
-      with:
-        name: ddddocr-armv7-image
-        path: ddddocr-armv7.tar.gz
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm/v7
+      - uses: docker/setup-buildx-action@v3
+      - run: git clone https://github.com/xzxxn777/ddddocr.git /tmp/ddddocr
+      - run: cd /tmp/ddddocr && cat > Dockerfile.armv7 << 'EOF'
+FROM python:3.9-slim-bullseye
+RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx libgomp1 gcc g++ && rm -rf /var/lib/apt/lists/*
+WORKDIR /ddddocr
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY server.py .
+EXPOSE 7777
+CMD ["python", "server.py"]
+EOF
+      - run: cd /tmp/ddddocr && docker buildx build --platform linux/arm/v7 -f Dockerfile.armv7 -t ddddocr:armv7 --load .
+      - run: docker save ddddocr:armv7 | gzip > ddddocr-armv7.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ddddocr-armv7-image
+          path: ddddocr-armv7.tar.gz
