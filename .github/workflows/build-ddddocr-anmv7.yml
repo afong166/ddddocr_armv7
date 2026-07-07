@@ -8,45 +8,26 @@ on:
 jobs:
   build-armv7:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+    - uses: actions/checkout@v4
+    - uses: docker/setup-qemu-action@v3
       with:
         platforms: arm/v7
-        
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Clone ddddocr repo
-      run: git clone https://github.com/xzxxn777/ddddocr.git /tmp/ddddocr
-        
-    - name: Build ARMv7 image
-      run: |
+    - uses: docker/setup-buildx-action@v3
+    - run: git clone https://github.com/xzxxn777/ddddocr.git /tmp/ddddocr
+    - run: |
         cd /tmp/ddddocr
-        cat > Dockerfile.armv7 << 'EOF'
-        FROM python:3.9-slim-bullseye
-        RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx libgomp1 gcc g++ && apt-get clean && rm -rf /var/lib/apt/lists/*
+        echo 'FROM python:3.9-slim-bullseye
+        RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx libgomp1 gcc g++ && rm -rf /var/lib/apt/lists/*
         WORKDIR /ddddocr
         COPY requirements.txt .
         RUN pip install --no-cache-dir -r requirements.txt
         COPY server.py .
         EXPOSE 7777
-        CMD ["python", "server.py"]
-        EOF
+        CMD ["python", "server.py"]' > Dockerfile.armv7
         docker buildx build --platform linux/arm/v7 -f Dockerfile.armv7 -t ddddocr:armv7 --load .
-        
-    - name: Export image
-      run: |
-        docker save ddddocr:armv7 | gzip > ddddocr-armv7.tar.gz
-        ls -lh ddddocr-armv7.tar.gz
-        
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+    - run: docker save ddddocr:armv7 | gzip > ddddocr-armv7.tar.gz
+    - uses: actions/upload-artifact@v4
       with:
         name: ddddocr-armv7-image
         path: ddddocr-armv7.tar.gz
-        retention-days: 30
